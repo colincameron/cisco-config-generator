@@ -1,0 +1,19 @@
+# Config (contains database credentials)
+config.ini
+
+# Generated phone configs
+output/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# macOS
+.DS_Store
