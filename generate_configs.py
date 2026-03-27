@@ -99,43 +99,33 @@ def fetch_extension_details(cursor, extension: str) -> dict | None:
     Query FreePBX tables for SIP credentials and display name.
 
     FreePBX (asterisk DB) relevant tables:
-      users   – extension, name (display name)
-      sip     – id (=extension), secret, callerid
+      users     – extension, name (display name)
+      sip       – id (=extension), keyword, data, flags  (EAV format)
       voicemail – mailbox, password, fullname, email
     """
-    # Primary query: join users + sip tables
+    # Fetch all sip rows for this extension and pivot keyword→data
     cursor.execute(
-        """
-        SELECT
-            u.extension,
-            u.name          AS display_name,
-            s.secret        AS sip_secret,
-            s.callerid      AS callerid,
-            s.context       AS context
-        FROM users u
-        LEFT JOIN sip s ON s.id = u.extension
-        WHERE u.extension = %s
-        LIMIT 1
-        """,
+        "SELECT keyword, data FROM sip WHERE id = %s",
         (extension,),
     )
-    row = cursor.fetchone()
+    sip_rows = cursor.fetchall()
 
-    if row is None:
-        # Fallback: query sip table alone (some FreePBX setups omit the users table)
-        cursor.execute(
-            "SELECT id AS extension, secret AS sip_secret, callerid, context FROM sip WHERE id = %s LIMIT 1",
-            (extension,),
-        )
-        row = cursor.fetchone()
-
-    if row is None:
+    if not sip_rows:
         return None
 
+    sip = {r["keyword"]: r["data"] for r in sip_rows}
+
+    # Fetch display name from users table
+    cursor.execute(
+        "SELECT name FROM users WHERE extension = %s LIMIT 1",
+        (extension,),
+    )
+    user_row = cursor.fetchone() or {}
+
     # Resolve display name: prefer users.name, then parse callerid "Name" <number>
-    display_name = row.get("display_name") or ""
+    display_name = user_row.get("name") or ""
     if not display_name:
-        cid = row.get("callerid") or ""
+        cid = sip.get("callerid") or ""
         m = re.match(r'"?([^"<]+)"?\s*<', cid)
         display_name = m.group(1).strip() if m else f"Extension {extension}"
 
@@ -147,10 +137,10 @@ def fetch_extension_details(cursor, extension: str) -> dict | None:
     vm_row = cursor.fetchone() or {}
 
     return {
-        "extension":    str(row["extension"]),
+        "extension":    extension,
         "display_name": display_name,
-        "sip_secret":   row.get("sip_secret") or "",
-        "context":      row.get("context") or "from-internal",
+        "sip_secret":   sip.get("secret") or "",
+        "context":      sip.get("context") or "from-internal",
         "vm_password":  vm_row.get("vm_password") or "",
         "email":        vm_row.get("email") or "",
     }
