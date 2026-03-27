@@ -101,7 +101,6 @@ def fetch_extension_details(cursor, extension: str) -> dict | None:
     FreePBX (asterisk DB) relevant tables:
       users     – extension, name (display name)
       sip       – id (=extension), keyword, data, flags  (EAV format)
-      voicemail – mailbox, password, fullname, email
     """
     # Fetch all sip rows for this extension and pivot keyword→data
     cursor.execute(
@@ -129,20 +128,11 @@ def fetch_extension_details(cursor, extension: str) -> dict | None:
         m = re.match(r'"?([^"<]+)"?\s*<', cid)
         display_name = m.group(1).strip() if m else f"Extension {extension}"
 
-    # Optionally fetch voicemail password (useful as a secondary credential check)
-    cursor.execute(
-        "SELECT password AS vm_password, email FROM voicemail WHERE mailbox = %s LIMIT 1",
-        (extension,),
-    )
-    vm_row = cursor.fetchone() or {}
-
     return {
         "extension":    extension,
         "display_name": display_name,
         "sip_secret":   sip.get("secret") or "",
         "context":      sip.get("context") or "from-internal",
-        "vm_password":  vm_row.get("vm_password") or "",
-        "email":        vm_row.get("email") or "",
     }
 
 
