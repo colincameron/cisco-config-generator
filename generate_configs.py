@@ -169,7 +169,7 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     # Firmware / load info
     load_info = _sub(root, "loadInformation")
     loads = _sub(load_info, "loads")
-    load = _sub(loads, "load", "SIP45.9-4-2SR3-1S")
+    load = _sub(loads, "load", "SIP41.9-4-2SR3-1S")
     load.set("index", "0")
 
     # Device pool / settings
