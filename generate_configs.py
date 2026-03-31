@@ -11,6 +11,7 @@ import os
 import re
 import sys
 from pathlib import Path
+import time
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 
@@ -161,56 +162,86 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
 
     root = ET.Element("device")
 
-    # Protocol
     _sub(root, "deviceProtocol", "SIP")
     _sub(root, "sshUserId", "cisco")
     _sub(root, "sshPassword", "cisco")
+    _sub(root, "ipAddressMode", "0")
 
-    # Firmware / load info
-    load_info = _sub(root, "loadInformation")
-    loads = _sub(load_info, "loads")
-    load = _sub(loads, "load", "SIP41.9-4-2SR3-1S")
-    load.set("index", "0")
+    device_settings = _sub(root, "devicePool")
 
-    # Device pool / settings
-    device_settings = _sub(root, "deviceSettings")
-    dt = _sub(device_settings, "dateTime")
+    dt = _sub(device_settings, "dateTimeSetting")
     _sub(dt, "dateTemplate", date_fmt)
-    _sub(dt, "timeFormat", time_fmt)
     _sub(dt, "timeZone", timezone)
-    _sub(dt, "ntpServer1", ntp)
+    ntps = _sub(dt, "ntps")
+    ntp = _sub(ntps, "ntp")
+    _sub(ntp, "name", ntp)
+    _sub(ntp, "ntpMode", "Unicast")
 
-    # Vendor config
-    vendor = _sub(root, "vendorConfig")
-    _sub(vendor, "disableSpeaker",     "0")
-    _sub(vendor, "disableHeadset",     "0")
-    _sub(vendor, "disableVideo",       "1")
-    _sub(vendor, "disableSshPort",     "0")
-    _sub(vendor, "webAccess",          "0")
-    _sub(vendor, "powerSaveDisplay",   "1800")
-
-    # Call manager group (required — phones show "Unprovisioned" without this)
-    cm_group = _sub(root, "callManagerGroup")
+    cm_group = _sub(device_settings, "callManagerGroup")
     members  = _sub(cm_group, "members")
     member   = _sub(members, "member")
     member.set("priority", "0")
     cm       = _sub(member, "callManager")
-    cm_name  = _sub(cm, "processNodeName", proxy_host)
+    _sub(cm, "processNodeName", proxy_host)
     ports    = _sub(cm, "ports")
     _sub(ports, "sipPort", proxy_port)
-    _sub(ports, "mgcpPorts")
+    _sub(ports, "ethernetPhonePort", 2000)
 
     # SIP configuration
     sip_cfg = _sub(root, "sipProfile")
-    _sub(sip_cfg, "sipProxies")           # placeholder; proxy per-line below
+    sip_proxies = _sub(sip_cfg, "sipProxies")
+    _sub(sip_proxies, "registerWithProxy", "true")
+
+    sip_call_features = _sub(sip_cfg, "sipCallFeatures")
+    _sub(sip_call_features, "cnfJoinEnabled",       "true")
+    _sub(sip_call_features, "rfc2543Hold",          "false")
+    _sub(sip_call_features, "callHoldRingback",     "2")
+    _sub(sip_call_features, "localCfwdEnable",      "true")
+    _sub(sip_call_features, "semiAttendedTransfer", "true")
+    _sub(sip_call_features, "anonymousCallBlock",   "2")
+    _sub(sip_call_features, "callerIdBlocking",     "2")
+    _sub(sip_call_features, "dndControl",           "0")
+    _sub(sip_call_features, "remoteCcEnable",       "true")
+
     sip_stack = _sub(sip_cfg, "sipStack")
-    _sub(sip_stack, "sipInviteRetx",           "6")
-    _sub(sip_stack, "sipTimerT1",              "500")
-    _sub(sip_stack, "sipTimerT2",              "4000")
-    _sub(sip_stack, "sipTimerInviteExpires",   "180")
-    _sub(sip_stack, "sipTimerRegisterExpires", "3600")
-    _sub(sip_stack, "sipTimerRegisterDelta",   "5")
-    _sub(sip_stack, "transportLayerProtocol",  "4")  # 4 = UDP+TCP
+    _sub(sip_stack, "sipInviteRetx",         "6")
+    _sub(sip_stack, "sipRetx",               "10")
+    _sub(sip_stack, "timerInviteExpires",    "180")
+    _sub(sip_stack, "timerRegisterExpires",  "3600")
+    _sub(sip_stack, "timerRegisterDelta",    "5")
+    _sub(sip_stack, "timerKeepAliveExpires", "120")
+    _sub(sip_stack, "timerSubscribeExpires", "120")
+    _sub(sip_stack, "timerSubscribeDelta",   "5")
+    _sub(sip_stack, "timerT1",               "500")
+    _sub(sip_stack, "timerT2",               "4000")
+    _sub(sip_stack, "maxRedirects",          "70")
+    _sub(sip_stack, "remotePartyID",         "true")
+    _sub(sip_stack, "userInfo",              "None")
+
+    _sub(sip_cfg, "autoAnswerTimer",                      "1")
+    _sub(sip_cfg, "autoAnswerAltBehavior",                "false")
+    _sub(sip_cfg, "autoAnswerOverride",                   "true")
+    _sub(sip_cfg, "transferOnhookEnabled",                "false")
+    _sub(sip_cfg, "enableVad",                            "false")
+    _sub(sip_cfg, "preferredCodec",                       "g711ulaw")
+    _sub(sip_cfg, "dtmfAvtPayload",                       "101")
+    _sub(sip_cfg, "dtmfDbLevel",                          "3")
+    _sub(sip_cfg, "dtmfOutofBand",                        "avt")
+    _sub(sip_cfg, "alwaysUsePrimeLine",                   "false")
+    _sub(sip_cfg, "alwaysUsePrimeLineVoiceMail",          "false")
+    _sub(sip_cfg, "kpml",                                 "3")
+    _sub(sip_cfg, "natEnabled",                           "false")
+    _sub(sip_cfg, "phoneLabel",                           display_name)
+    _sub(sip_cfg, "stutterMsgWaiting",                    "0")
+    _sub(sip_cfg, "callStats",                            "false")
+    _sub(sip_cfg, "silentPeriodBetweenCallWaitingBursts", "10")
+    _sub(sip_cfg, "disableLocalSpeedDialConfig",           "false")
+    _sub(sip_cfg, "startMediaPort",                       "10000")
+    _sub(sip_cfg, "stopMediaPort",                        "20000")
+    _sub(sip_cfg, "voipControlPort",                      proxy_port)
+    _sub(sip_cfg, "dscpForAudio",                         "184")
+    _sub(sip_cfg, "ringSettingBusyStationPolicy",         "0")
+    _sub(sip_cfg, "dialTemplate",                         "dialplan.xml")
 
     # SIP lines
     sip_lines = _sub(root, "sipLines")
@@ -233,34 +264,90 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     _sub(line1, "ringSettingIdle", "4")
     _sub(line1, "ringSettingActive", "5")
     _sub(line1, "callWaiting",     "3")
-    _sub(line1, "autoAnswer",      "0")
+    auto_answer = _sub(line1, "autoAnswer")
+    _sub(auto_answer, "autoAnswerEnabled", "2")
+    forward_disp = _sub(line1, "forwardCallInfoDisplay")
+    _sub(forward_disp, "callerName", "true")
+    _sub(forward_disp, "callerNumber", "true")
+    _sub(forward_disp, "redirectedNumber", "true")
+    _sub(forward_disp, "dialedNumber", "true")
 
     # Line 2 — spare (no auth, acts as second appearance or spare)
     line2 = ET.SubElement(sip_lines, "line")
     line2.set("button", "2")
-    _sub(line2, "featureID",    "9")
-    _sub(line2, "featureLabel", display_name)
-    _sub(line2, "proxy",        proxy_host)
-    _sub(line2, "port",         proxy_port)
-    _sub(line2, "name",         ext)
-    _sub(line2, "displayName",  display_name)
-    _sub(line2, "contact",      ext)
-    _sub(line2, "authName",     ext)
-    _sub(line2, "authPassword", sip_secret)
-    _sub(line2, "sharedLine",   "false")
-    _sub(line2, "callWaiting",  "3")
-    _sub(line2, "autoAnswer",   "0")
+    _sub(line2, "featureID",       "9")           # 9 = Line
+    _sub(line2, "featureLabel",    display_name)
+    _sub(line2, "proxy",           proxy_host)
+    _sub(line2, "port",            proxy_port)
+    _sub(line2, "name",            ext)
+    _sub(line2, "displayName",     display_name)
+    _sub(line2, "contact",         ext)
+    _sub(line2, "authName",        ext)
+    _sub(line2, "authPassword",    sip_secret)
+    _sub(line2, "sharedLine",      "false")
+    _sub(line2, "messageWaitingLampPolicy", "3")
+    _sub(line2, "messagesNumber",  "*97")
+    _sub(line2, "ringSettingIdle", "4")
+    _sub(line2, "ringSettingActive", "5")
+    _sub(line2, "callWaiting",     "3")
+    auto_answer_2 = _sub(line2, "autoAnswer")
+    _sub(auto_answer_2, "autoAnswerEnabled", "2")
+    forward_disp_2 = _sub(line2, "forwardCallInfoDisplay")
+    _sub(forward_disp_2, "callerName", "true")
+    _sub(forward_disp_2, "callerNumber", "true")
+    _sub(forward_disp_2, "redirectedNumber", "true")
+    _sub(forward_disp_2, "dialedNumber", "true")
+
+
+    # Common profile
+    common_profile = _sub(root, "commonProfile")
+    _sub(common_profile, "phonePassword")
+    _sub(common_profile, "backgroundImageAccess", "true")
+    _sub(common_profile, "callLogBlfEnabled", "1")
+
+
+    # Firmware / load info
+    _sub(root, "loadInformation", "SIP41.8-5-4S")
+
+    # Vendor config
+    vendor = _sub(root, "vendorConfig")
+    _sub(vendor, "disableSpeaker",           "0")
+    _sub(vendor, "disableSpeakerAndHeadset", "0")
+    _sub(vendor, "pcPort",                   "0")
+    _sub(vendor, "settingsAccess",           "1")
+    _sub(vendor, "garp",                     "0")
+    _sub(vendor, "voiceVlanAccess",          "0")
+    _sub(vendor, "videoCapability",          "0")
+    _sub(vendor, "autoSelectLineEnable",     "0")
+    _sub(vendor, "webAccess",                "0")
+    _sub(vendor, "spanToPCPort",             "1")
+    _sub(vendor, "loggingDisplay",           "1")
+    _sub(vendor, "loadServer")
+    _sub(vendor, "sshAccess",                "0")
+
+    # Version - use timestamp
+    _sub(root, "versionStamp", time.time())
 
     # Network locale / user locale
-    _sub(root, "networkLocale",     "United_States")
-    _sub(root, "networkLocaleInfo")
-    _sub(root, "userLocale",        "English_United_States")
+    _sub(root, "networkLocale", "United_Kingdom")
+    network_locale = _sub(root, "networkLocaleInfo")
+    _sub(network_locale, "name", "United_Kingdom")
+    _sub(network_locale, "uid", "64")
+    _sub(network_locale, "version", "1.0.0.0-4")
+
+    _sub(root, "deviceSecurityMode", "1")
+    _sub(root, "authenticationURL")
+    _sub(root, "servicesURL")
+    _sub(root, "transportLayerProtocol", "2")
+    _sub(root, "certHash")
+    _sub(root, "encrConfig", "false")
+    _sub(root, "dialToneSetting", "2")
 
     # Pretty-print
     raw = ET.tostring(root, encoding="unicode", xml_declaration=False)
-    reparsed = minidom.parseString(f'<?xml version="1.0" encoding="UTF-8"?>{raw}')
+    reparsed = minidom.parseString(f'{raw}')
     return reparsed.toprettyxml(indent="  ", encoding=None).replace(
-        '<?xml version="1.0" ?>', '<?xml version="1.0" encoding="UTF-8"?>'
+        '<?xml version="1.0" ?>', ''
     )
 
 
