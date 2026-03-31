@@ -154,7 +154,7 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     timezone    = cfg["phone"].get("timezone", "America/New_York")
     date_fmt    = cfg["phone"].get("date_format", "M/D/Y")
     time_fmt    = cfg["phone"].get("time_format", "12hr")
-    ntp         = cfg["phone"].get("ntp_server", "pool.ntp.org")
+    ntp_server  = cfg["phone"].get("ntp_server", "pool.ntp.org")
 
     ext          = details["extension"]
     display_name = details["display_name"]
@@ -174,7 +174,7 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     _sub(dt, "timeZone", timezone)
     ntps = _sub(dt, "ntps")
     ntp = _sub(ntps, "ntp")
-    _sub(ntp, "name", ntp)
+    _sub(ntp, "name", ntp_server)
     _sub(ntp, "ntpMode", "Unicast")
 
     cm_group = _sub(device_settings, "callManagerGroup")
