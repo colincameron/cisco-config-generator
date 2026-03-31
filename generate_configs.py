@@ -185,7 +185,7 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     _sub(cm, "processNodeName", proxy_host)
     ports    = _sub(cm, "ports")
     _sub(ports, "sipPort", proxy_port)
-    _sub(ports, "ethernetPhonePort", 2000)
+    _sub(ports, "ethernetPhonePort", "2000")
 
     # SIP configuration
     sip_cfg = _sub(root, "sipProfile")
@@ -326,7 +326,7 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     _sub(vendor, "sshAccess",                "0")
 
     # Version - use timestamp
-    _sub(root, "versionStamp", time.time())
+    _sub(root, "versionStamp", str(int(time.time())))
 
     # Network locale / user locale
     _sub(root, "networkLocale", "United_Kingdom")
