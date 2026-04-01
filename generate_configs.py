@@ -43,8 +43,8 @@ proxy_port = 5060
 
 [phone]
 # Timezone string used in the XML (Olson format)
-timezone     = America/New_York
-date_format  = M/D/Y
+timezone     = GMT Standard/Daylight Time
+date_format  = D/M/Y
 time_format  = 12hr
 ntp_server   = pool.ntp.org
 # Output directory for generated XML files (default: ./output)
