@@ -175,7 +175,7 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     ntps = _sub(dt, "ntps")
     ntp = _sub(ntps, "ntp")
     _sub(ntp, "name", ntp_server)
-    _sub(ntp, "ntpMode", "Unicast")
+    _sub(ntp, "ntpMode", "unicast")
 
     cm_group = _sub(device_settings, "callManagerGroup")
     members  = _sub(cm_group, "members")
@@ -231,7 +231,7 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     _sub(sip_cfg, "alwaysUsePrimeLineVoiceMail",          "false")
     _sub(sip_cfg, "kpml",                                 "3")
     _sub(sip_cfg, "natEnabled",                           "false")
-    _sub(sip_cfg, "phoneLabel",                           display_name)
+    _sub(sip_cfg, "phoneLabel",                           f"{display_name} ({ext})")
     _sub(sip_cfg, "stutterMsgWaiting",                    "0")
     _sub(sip_cfg, "callStats",                            "false")
     _sub(sip_cfg, "silentPeriodBetweenCallWaitingBursts", "10")
@@ -244,14 +244,14 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     _sub(sip_cfg, "dialTemplate",                         "dialplan.xml")
 
     # SIP lines
-    sip_lines = _sub(root, "sipLines")
+    sip_lines = _sub(sip_cfg, "sipLines")
 
     # Line 1 — primary extension
     line1 = ET.SubElement(sip_lines, "line")
     line1.set("button", "1")
     _sub(line1, "featureID",       "9")           # 9 = Line
-    _sub(line1, "featureLabel",    display_name)
-    _sub(line1, "proxy",           proxy_host)
+    _sub(line1, "featureLabel",    f"{display_name} ({ext})")
+    _sub(line1, "proxy",           "USECALLMANAGER")
     _sub(line1, "port",            proxy_port)
     _sub(line1, "name",            ext)
     _sub(line1, "displayName",     display_name)
@@ -276,8 +276,8 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     line2 = ET.SubElement(sip_lines, "line")
     line2.set("button", "2")
     _sub(line2, "featureID",       "9")           # 9 = Line
-    _sub(line2, "featureLabel",    display_name)
-    _sub(line2, "proxy",           proxy_host)
+    _sub(line2, "featureLabel",    f"{display_name} ({ext})")
+    _sub(line2, "proxy",           "USECALLMANAGER")
     _sub(line2, "port",            proxy_port)
     _sub(line2, "name",            ext)
     _sub(line2, "displayName",     display_name)
@@ -311,8 +311,8 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
 
     # Vendor config
     vendor = _sub(root, "vendorConfig")
-    _sub(vendor, "disableSpeaker",           "0")
-    _sub(vendor, "disableSpeakerAndHeadset", "0")
+    _sub(vendor, "disableSpeaker",           "false")
+    _sub(vendor, "disableSpeakerAndHeadset", "false")
     _sub(vendor, "pcPort",                   "0")
     _sub(vendor, "settingsAccess",           "1")
     _sub(vendor, "garp",                     "0")
