@@ -35,12 +35,13 @@ user     = asteriskuser
 password = asteriskpassword
 
 [pbx]
-proxy_host = 192.168.1.1   # IP/hostname of your Asterisk/FreePBX server
-proxy_port = 5060
+proxy_host        = 192.168.1.1   # IP/hostname of your Asterisk/FreePBX server
+proxy_port        = 5060
+secure_proxy_port = 5061          # TLS SIP port
 
 [phone]
-timezone    = America/New_York   # Olson timezone string
-date_format = M/D/Y
+timezone    = GMT Standard/Daylight Time   # Olson timezone string
+date_format = D/M/Y
 time_format = 12hr               # 12hr or 24hr
 ntp_server  = pool.ntp.org
 output_dir  = output             # Directory to write XML files into
@@ -58,6 +59,7 @@ Cisco 7941G Config Generator  [output/ — 3 existing]
   1  List existing configs
   2  Delete configs
   3  Generate new configs
+  4  List all extensions in FreePBX DB
   q  Quit
 ```
 
@@ -105,6 +107,24 @@ Select (number(s), MAC address(es), a, or b):
 - `b` returns to the main menu
 
 All destructive actions require `y` confirmation before anything is removed.
+
+---
+
+#### Option 4 — List all extensions in FreePBX DB
+
+Connects to the database and lists every extension from the `users` table — useful for looking up extension numbers before generating configs:
+
+```
+Found 5 extension(s) in the FreePBX database:
+
+  Extension  Display Name
+  ---------  ------------
+  101        Alice Smith
+  102        Bob Jones
+  201        Conference Room
+  300        Reception
+  999        Test Extension
+```
 
 ---
 
@@ -170,7 +190,6 @@ The script connects to the FreePBX `asterisk` MySQL database and queries three t
 |---|---|---|
 | `users` | `extension`, `name` | Display name shown on the phone screen |
 | `sip` | `id`, `secret`, `callerid`, `context` | SIP credentials for registration |
-| `voicemail` | `mailbox`, `password`, `email` | Voicemail details |
 
 The primary query joins `users` and `sip` on the extension number. If the `users` table has no matching row (some minimal FreePBX setups), it falls back to querying `sip` alone. The display name is resolved from `users.name` first, then parsed from the `callerid` field (`"Name" <number>` format), and defaults to `Extension NNN` if neither is available.
 
@@ -180,7 +199,7 @@ Each config file follows the `SEP{MAC}.cnf.xml` format that Cisco phones request
 
 - **`<deviceProtocol>SIP</deviceProtocol>`** — tells the phone to use SIP rather than SCCP
 - **`<loadInformation>`** — specifies the SIP firmware image name
-- **`<deviceSettings>`** — date/time format, timezone, NTP server
+- **`<devicePool>`** — date/time format, timezone, NTP server
 - **`<vendorConfig>`** — hardware feature toggles (speaker, headset, display sleep timer, etc.)
 - **`<callManagerGroup>`** — IP and SIP port of the Asterisk server; required or the phone displays "Unprovisioned"
 - **`<sipProfile>`** — SIP stack timers and transport settings (UDP+TCP)
