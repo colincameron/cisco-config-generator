@@ -96,6 +96,14 @@ def get_db_connection(cfg: configparser.ConfigParser):
     )
 
 
+def fetch_all_extensions(cursor) -> list[dict]:
+    """Return all extensions from the FreePBX DB, sorted by extension number."""
+    cursor.execute(
+        "SELECT extension, name FROM users ORDER BY u.extension"
+    )
+    return cursor.fetchall()
+
+
 def fetch_extension_details(cursor, extension: str) -> dict | None:
     """
     Query FreePBX tables for SIP credentials and display name.
@@ -507,6 +515,34 @@ def action_delete(output_dir: Path) -> None:
         return
 
 
+def action_list_extensions(cfg: configparser.ConfigParser) -> None:
+    try:
+        conn = get_db_connection(cfg)
+    except Exception as e:
+        print(f"ERROR: Could not connect to database: {e}")
+        return
+
+    with conn:
+        with conn.cursor() as cursor:
+            rows = fetch_all_extensions(cursor)
+
+    if not rows:
+        print("\nNo extensions found in the FreePBX database.")
+        return
+
+    col_ext  = max(len("Extension"), max(len(r["extension"] or "") for r in rows))
+    col_name = max(len("Display Name"), max(len(r["name"] or "")      for r in rows))
+
+    header = f"  {'Extension':<{col_ext}}  {'Display Name':<{col_name}}"
+    rule   = f"  {'-' * col_ext}  {'-' * col_name}"
+    print(f"\nFound {len(rows)} extension(s) in the FreePBX database:\n")
+    print(header)
+    print(rule)
+    for r in rows:
+        print(f"  {(r['extension'] or ''):<{col_ext}}  {(r['name'] or ''):<{col_name}}")
+    print()
+
+
 def action_generate(cfg: configparser.ConfigParser, output_dir: Path, dry_run: bool) -> None:
     if not dry_run:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -615,6 +651,7 @@ def show_menu(output_dir: Path) -> None:
     print("  1  List existing configs")
     print("  2  Delete configs")
     print("  3  Generate new configs")
+    print("  4  List all extensions in FreePBX DB")
     print("  q  Quit")
     print()
 
@@ -700,10 +737,12 @@ def main() -> None:
             action_delete(output_dir)
         elif choice == "3":
             action_generate(cfg, output_dir, dry_run=args.dry_run)
+        elif choice == "4":
+            action_list_extensions(cfg)
         elif choice == "q":
             break
         else:
-            print("  Invalid choice. Enter 1, 2, 3, or q.")
+            print("  Invalid choice. Enter 1, 2, 3, 4, or q.")
 
 
 if __name__ == "__main__":
