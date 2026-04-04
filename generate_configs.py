@@ -40,6 +40,7 @@ password = asteriskpassword
 # SIP proxy / Asterisk server that phones register to
 proxy_host = 192.168.1.1
 proxy_port = 5060
+secure_proxy_port = 5061
 
 [phone]
 # Timezone string used in the XML (Olson format)
@@ -151,6 +152,7 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     """Return a pretty-printed XML string for SEP{mac}.cnf.xml."""
     proxy_host = cfg["pbx"]["proxy_host"]
     proxy_port = cfg["pbx"].get("proxy_port", "5060")
+    secure_proxy_port = cfg["pbx"].get("secure_proxy_port", "5061")
     timezone    = cfg["phone"].get("timezone", "America/New_York")
     date_fmt    = cfg["phone"].get("date_format", "M/D/Y")
     time_fmt    = cfg["phone"].get("time_format", "12hr")
@@ -183,8 +185,10 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     member.set("priority", "0")
     cm       = _sub(member, "callManager")
     _sub(cm, "processNodeName", proxy_host)
+    _sub(cm, "name", proxy_host)
     ports    = _sub(cm, "ports")
     _sub(ports, "sipPort", proxy_port)
+    _sub(ports, "securedSipPort", secure_proxy_port)
     _sub(ports, "ethernetPhonePort", "2000")
 
     # SIP configuration
