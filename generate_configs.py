@@ -99,7 +99,7 @@ def get_db_connection(cfg: configparser.ConfigParser):
 def fetch_all_extensions(cursor) -> list[dict]:
     """Return all extensions from the FreePBX DB, sorted by extension number."""
     cursor.execute(
-        "SELECT extension, name FROM users ORDER BY u.extension"
+        "SELECT extension, name FROM users ORDER BY extension"
     )
     return cursor.fetchall()
 
