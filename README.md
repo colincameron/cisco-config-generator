@@ -38,6 +38,8 @@ password = asteriskpassword
 proxy_host        = 192.168.1.1   # IP/hostname of your Asterisk/FreePBX server
 proxy_port        = 5060
 secure_proxy_port = 5061          # TLS SIP port
+directory_title   = My Office     # Title shown at the top of the phone directory
+directory_path    = /var/www/html/directory.xml
 
 [phone]
 timezone    = GMT Standard/Daylight Time   # Olson timezone string
@@ -60,6 +62,7 @@ Cisco 7941G Config Generator  [output/ — 3 existing]
   2  Delete configs
   3  Generate new configs
   4  List all extensions in FreePBX DB
+  5  Generate phone directory (directory.xml)
   q  Quit
 ```
 
@@ -125,6 +128,30 @@ Found 5 extension(s) in the FreePBX database:
   300        Reception
   999        Test Extension
 ```
+
+---
+
+#### Option 5 — Generate phone directory
+
+Fetches all extensions from the database and writes a `CiscoIPPhoneDirectory` XML file that Cisco phones can retrieve as a corporate directory. The output path and directory title are set in `config.ini`.
+
+```xml
+<CiscoIPPhoneDirectory>
+   <Title>My Office</Title>
+   <DirectoryEntry>
+      <Name>Alice Smith</Name>
+      <Telephone>101</Telephone>
+   </DirectoryEntry>
+   <DirectoryEntry>
+      <Name>Bob Jones</Name>
+      <Telephone>102</Telephone>
+   </DirectoryEntry>
+</CiscoIPPhoneDirectory>
+```
+
+By default the file is written to `/var/www/html/directory.xml` — writing there typically requires `sudo`. Use `--dry-run` to preview the XML without writing.
+
+If an extension has no display name set in FreePBX, the extension number is used as the name.
 
 ---
 

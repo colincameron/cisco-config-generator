@@ -41,6 +41,10 @@ password = asteriskpassword
 proxy_host = 192.168.1.1
 proxy_port = 5060
 secure_proxy_port = 5061
+# Title shown at the top of the phone directory
+directory_title = My Office
+# Path where directory.xml is written
+directory_path = /var/www/html/directory.xml
 
 [phone]
 # Timezone string used in the XML (Olson format)
@@ -349,7 +353,7 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
 
     _sub(root, "deviceSecurityMode", "1")
     _sub(root, "authenticationURL")
-    _sub(root, "servicesURL")
+    _sub(root, "servicesURL", f"http://{proxy_host}/directory.xml")
     _sub(root, "transportLayerProtocol", "2")
     _sub(root, "certHash")
     _sub(root, "encrConfig", "false")
@@ -543,6 +547,55 @@ def action_list_extensions(cfg: configparser.ConfigParser) -> None:
     print()
 
 
+def build_directory_xml(rows: list[dict], title: str) -> str:
+    """Return a pretty-printed CiscoIPPhoneDirectory XML string."""
+    root = ET.Element("CiscoIPPhoneDirectory")
+    ET.SubElement(root, "Title").text = title
+    for r in rows:
+        entry = ET.SubElement(root, "DirectoryEntry")
+        ET.SubElement(entry, "Name").text = r["name"] or r["extension"]
+        ET.SubElement(entry, "Telephone").text = r["extension"]
+    raw = ET.tostring(root, encoding="unicode", xml_declaration=False)
+    reparsed = minidom.parseString(raw)
+    return reparsed.toprettyxml(indent="   ", encoding=None).replace('<?xml version="1.0" ?>', '').lstrip("\n")
+
+
+def action_generate_phonebook(cfg: configparser.ConfigParser, dry_run: bool) -> None:
+    title = cfg["pbx"].get("directory_title", "My Office")
+    dest  = Path(cfg["pbx"].get("directory_path", "/var/www/html/directory.xml"))
+
+    try:
+        conn = get_db_connection(cfg)
+    except Exception as e:
+        print(f"ERROR: Could not connect to database: {e}")
+        return
+
+    with conn:
+        with conn.cursor() as cursor:
+            rows = fetch_all_extensions(cursor)
+
+    if not rows:
+        print("\nNo extensions found in the FreePBX database.")
+        return
+
+    xml_content = build_directory_xml(rows, title)
+
+    if dry_run:
+        print(f"\n{'─' * 60}")
+        print(f"File: {dest}")
+        print(xml_content)
+        return
+
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(xml_content, encoding="utf-8")
+    except PermissionError:
+        print(f"ERROR: Permission denied writing to {dest}. Try running with sudo.")
+        return
+
+    print(f"\nPhonebook with {len(rows)} entry/entries written → {dest}")
+
+
 def action_generate(cfg: configparser.ConfigParser, output_dir: Path, dry_run: bool) -> None:
     if not dry_run:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -652,6 +705,7 @@ def show_menu(output_dir: Path) -> None:
     print("  2  Delete configs")
     print("  3  Generate new configs")
     print("  4  List all extensions in FreePBX DB")
+    print("  5  Generate phone directory (directory.xml)")
     print("  q  Quit")
     print()
 
@@ -739,10 +793,12 @@ def main() -> None:
             action_generate(cfg, output_dir, dry_run=args.dry_run)
         elif choice == "4":
             action_list_extensions(cfg)
+        elif choice == "5":
+            action_generate_phonebook(cfg, dry_run=args.dry_run)
         elif choice == "q":
             break
         else:
-            print("  Invalid choice. Enter 1, 2, 3, 4, or q.")
+            print("  Invalid choice. Enter 1, 2, 3, 4, 5, or q.")
 
 
 if __name__ == "__main__":
