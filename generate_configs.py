@@ -295,10 +295,6 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     _sub(common_profile, "backgroundImageAccess", "true")
     _sub(common_profile, "callLogBlfEnabled", "1")
 
-
-    # Firmware / load info
-    _sub(root, "loadInformation", "SIP41.8-5-4S")
-
     # Vendor config
     vendor = _sub(root, "vendorConfig")
     _sub(vendor, "disableSpeaker",           "false")
