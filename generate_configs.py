@@ -669,7 +669,7 @@ def prompt_phone_entries(args_phones: list[str]) -> list[tuple[str, str]]:
 def show_menu(output_dir: Path) -> None:
     existing = find_existing_configs(output_dir)
     count_str = f"{len(existing)} existing" if existing else "none"
-    print(f"\nCisco 7941G Config Generator  [{output_dir}/ — {count_str}]")
+    print(f"\nCisco 794xG Config Generator  [{output_dir}/ — {count_str}]")
     print("─" * 50)
     print("  1  List existing configs")
     print("  2  Delete configs")

@@ -1,12 +1,14 @@
-# Cisco 7941G Config Generator
+# Cisco 7941G/7942G Config Generator
 
-Generates `SEP{MAC}.cnf.xml` provisioning files for Cisco 7941G phones running SIP firmware. User details (display name, SIP credentials) are pulled directly from a FreePBX/Asterisk MySQL database.
+Generates `SEP{MAC}.cnf.xml` provisioning files for Cisco 7941G/7942G phones running SIP firmware. User details (display name, SIP credentials) are pulled directly from a FreePBX/Asterisk MySQL database.
+
+The generated xml should support other models, but only 7941G and 7942G are tested.
 
 ## Requirements
 
 - Python 3.10+
 - A FreePBX/Asterisk server with MySQL access
-- Cisco 7941G phones flashed with SIP firmware (not SCCP)
+- Cisco 7941G/7942G phones flashed with SIP firmware (not SCCP)
 
 ## Installation
 
@@ -56,7 +58,7 @@ output_dir  = output             # Directory to write XML files into
 Running without `--phone` arguments opens the main menu:
 
 ```
-Cisco 7941G Config Generator  [output/ — 3 existing]
+Cisco 794xG Config Generator  [output/ — 3 existing]
 ──────────────────────────────────────────────────
   1  List existing configs
   2  Delete configs
