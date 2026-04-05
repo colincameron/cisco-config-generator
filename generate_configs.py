@@ -247,7 +247,7 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     _sub(sip_cfg, "alwaysUsePrimeLineVoiceMail",          "false")
     _sub(sip_cfg, "kpml",                                 "3")
     _sub(sip_cfg, "natEnabled",                           "false")
-    _sub(sip_cfg, "phoneLabel",                           f"{display_name} ({ext})")
+    _sub(sip_cfg, "phoneLabel",                           display_name)
     _sub(sip_cfg, "stutterMsgWaiting",                    "0")
     _sub(sip_cfg, "callStats",                            "false")
     _sub(sip_cfg, "silentPeriodBetweenCallWaitingBursts", "10")
