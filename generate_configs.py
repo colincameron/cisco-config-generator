@@ -288,32 +288,6 @@ def build_xml(mac: str, details: dict, cfg: configparser.ConfigParser) -> str:
     _sub(forward_disp, "redirectedNumber", "true")
     _sub(forward_disp, "dialedNumber", "true")
 
-    # Line 2 — spare (no auth, acts as second appearance or spare)
-    line2 = ET.SubElement(sip_lines, "line")
-    line2.set("button", "2")
-    _sub(line2, "featureID",       "9")           # 9 = Line
-    _sub(line2, "featureLabel",    f"{display_name} ({ext})")
-    _sub(line2, "proxy",           "USECALLMANAGER")
-    _sub(line2, "port",            proxy_port)
-    _sub(line2, "name",            ext)
-    _sub(line2, "displayName",     display_name)
-    _sub(line2, "contact",         ext)
-    _sub(line2, "authName",        ext)
-    _sub(line2, "authPassword",    sip_secret)
-    _sub(line2, "sharedLine",      "false")
-    _sub(line2, "messageWaitingLampPolicy", "3")
-    _sub(line2, "messagesNumber",  "*97")
-    _sub(line2, "ringSettingIdle", "4")
-    _sub(line2, "ringSettingActive", "5")
-    _sub(line2, "callWaiting",     "3")
-    auto_answer_2 = _sub(line2, "autoAnswer")
-    _sub(auto_answer_2, "autoAnswerEnabled", "2")
-    forward_disp_2 = _sub(line2, "forwardCallInfoDisplay")
-    _sub(forward_disp_2, "callerName", "true")
-    _sub(forward_disp_2, "callerNumber", "true")
-    _sub(forward_disp_2, "redirectedNumber", "true")
-    _sub(forward_disp_2, "dialedNumber", "true")
-
 
     # Common profile
     common_profile = _sub(root, "commonProfile")
